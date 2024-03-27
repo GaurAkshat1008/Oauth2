@@ -1,0 +1,12 @@
+interface User {
+  id: string;
+  username: string;
+}
+
+interface Token {
+  clientId: string;
+  accessToken: string;
+  refreshToken?: string; // optional refresh token
+  userId: string;
+  expiresAt: number; // Token expiration time in miliseconds
+}
