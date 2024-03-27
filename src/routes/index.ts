@@ -1,3 +1,4 @@
 import AuthRoutes from "./auth";
+import ClientRoutes from "./clients";
 
-export default AuthRoutes;
+export { AuthRoutes, ClientRoutes };

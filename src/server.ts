@@ -1,8 +1,8 @@
-import Main from "./app";
+import App from "./app";
 
 const main = async () => {
-  const app = new Main();
-  app.start_server();
+  const app = new App();
+  await app.start_server();
 };
 
 main().catch((err) => {

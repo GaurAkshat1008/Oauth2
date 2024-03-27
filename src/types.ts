@@ -10,3 +10,10 @@ interface Token {
   userId: string;
   expiresAt: number; // Token expiration time in miliseconds
 }
+
+interface Client {
+  clientId: string;
+  clientSecret: string;
+  redirectUris: string[];
+  grants: string[];
+}
