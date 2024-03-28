@@ -7,14 +7,18 @@ class AuthRoutes {
       const clientId = req.query.client_id?.toString();
       const redirectUri = req.query.redirect_uri?.toString();
       const scope = req.query.scope?.toString();
-      if (!clientId || !redirectUri || !scope) {
+      const username = req.query.username?.toString();
+      const password = req.query.password?.toString();
+      if (!clientId || !redirectUri || !scope || !username || !password) {
         return res.status(400).send("Invalid request");
       }
       try {
         const authorizationUrl = await oauthService.authorize(
           clientId,
           redirectUri,
-          scope
+          scope,
+          username,
+          password
         );
         res.redirect(authorizationUrl);
       } catch (error) {

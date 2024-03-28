@@ -10,9 +10,17 @@ class UserRepository {
     });
     return user;
   }
-  async createUser(username: string): Promise<User> {
-    const user: User = { id: v4(), username: username };
+  async createUser(username: string, password: string): Promise<User> {
+    const user: User = { id: v4(), username: username, password: password };
     await UserStoreModel.create(user);
+    return user;
+  }
+  async getUserById(id: string): Promise<User | null> {
+    const user = await UserStoreModel.findOne({
+      where: {
+        id: id,
+      },
+    });
     return user;
   }
 }

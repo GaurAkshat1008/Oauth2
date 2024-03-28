@@ -1,6 +1,7 @@
 import UserRepository from "./userRepo";
 import TokenStore from "./tokenStore";
 import { v4 } from "uuid";
+import { AuthCodeModel } from "./models";
 
 const clients: { [clientId: string]: string } = {
   client1: "client1secret",
@@ -19,14 +20,16 @@ class OauthService {
   async authorize(
     clientId: string,
     redirectUri: string,
-    scope: string
+    scope: string,
+    username: string,
+    password: string
   ): Promise<string> {
     if (!clients[clientId]) {
       throw new Error("Invalid client id");
     }
-    const user = await this.simulateLogin();
+    const user = await this.simulateLogin(username, password);
     if (!user) {
-      return `http://localhost:100/login?error=access_denied`;
+      return `http://localhost:1000/login?error=access_denied`;
     }
     const authorizationCode = crypto
       .getRandomValues(new Uint8Array(16))
@@ -34,7 +37,8 @@ class OauthService {
 
     const state = crypto.getRandomValues(new Uint8Array(16)).join("");
     this.storeAuthorizationCode(authorizationCode, user.id, state);
-    return `http://localhost:1000/callback?code=${authorizationCode}&state=${state}`;
+    const redirectUrl = `${redirectUri}?code=${authorizationCode}&state=${state}`;
+    return redirectUrl;
   }
 
   async handleAuthorizationCodeGrant(
@@ -54,9 +58,10 @@ class OauthService {
       throw new Error("Invalid authorization code");
     }
 
-    const user = await this.userRepository.getUserByUsername("user1"); // Replace with actual user lookup based on user ID
-
-    // Generate access token and (optional) refresh token
+    const user = await this.userRepository.getUserById(userId);
+    if (!user) {
+      throw new Error("Invalid user");
+    }
     const accessToken = crypto.getRandomValues(new Uint8Array(16)).join("");
     const refreshToken = crypto.getRandomValues(new Uint16Array(32)).join(""); // Optional refresh token
     const expiresAt = Date.now() + 3600000; // Token expires in 1 hour
@@ -74,10 +79,15 @@ class OauthService {
     return token;
   }
 
-  private async simulateLogin(): Promise<User | undefined> {
-    // Replace this with actual username/password login logic and validation
-    // This is for demonstration purposes only
-    return { id: "user1", username: "user1" };
+  private async simulateLogin(
+    username: string,
+    password: string
+  ): Promise<User | undefined> {
+    const user = await this.userRepository.getUserByUsername(username);
+    if (user && user.password === password) {
+      return user;
+    }
+    return undefined;
   }
 
   private async storeAuthorizationCode(
@@ -85,20 +95,24 @@ class OauthService {
     userId: string,
     state: string
   ): Promise<void> {
-    // Implement logic to store the authorization code, user ID, and state in a database (or secure storage)
-    // This is simplified for demonstration purposes
-    console.log(
-      `Storing authorization code: ${code}, user ID: ${userId}, state: ${state}`
-    );
+    try {
+      await AuthCodeModel.create({ code, userId, state });
+      console.log(
+        `Storing authorization code: ${code}, user ID: ${userId}, state: ${state}`
+      );
+    } catch (error) {
+      console.error(`Error storing authorization code: ${error}`);
+    }
   }
 
   private async verifyAuthorizationCode(
     code: string
   ): Promise<string | undefined> {
-    // Implement logic to retrieve the user ID associated with the authorization code from the database (or secure storage)
-    // This is simplified for demonstration purposes
-    if (code === "your-valid-authorization-code") {
-      return "user1"; // Replace with actual user ID retrieval
+    const authCodeDetails = await AuthCodeModel.findOne({
+      code: code,
+    });
+    if (authCodeDetails) {
+      return authCodeDetails.userId;
     }
     return undefined;
   }
